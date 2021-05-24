@@ -22,7 +22,7 @@ export class CustomMapperFetcher implements FetcherRenderer {
 
   generateFetcherImplementaion(): string {
     if (this._mapper.isExternal) {
-      return buildMapperImport(
+      const imp = buildMapperImport(
         this._mapper.source,
         [
           {
@@ -32,6 +32,7 @@ export class CustomMapperFetcher implements FetcherRenderer {
         ],
         this.visitor.config.useTypeImports
       );
+      return imp += "\nimport { QueryClient } from 'react-query';"
     }
 
     return null;
@@ -68,7 +69,22 @@ export class CustomMapperFetcher implements FetcherRenderer {
       ['${node.name.value}', variables],
       ${impl},
       options
-    );`;
+    );
+    
+use${operationName}.fetch = ${impl};
+use${operationName}.fetchQuery = <
+  TData = ${operationResultType},
+  TError = ${this.visitor.config.errorType}
+  >(
+    client: QueryClient,
+    ${variables},
+    ${options}
+  ) =>
+  client.fetchQuery<${operationResultType}, TError, TData>(
+    use${operationName}.getKey(variables),
+    ${impl},
+    options
+  );`;
   }
 
   generateMutationHook(
